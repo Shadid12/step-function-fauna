@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  step-app
+
+  Sample SAM Template for step-app with Step Function
+  
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  HelloWorldFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: hello-world/
+      Handler: app.lambdaHandler
+      Runtime: nodejs20.x
+      Architectures:
+        - x86_64
+      Events:
+        HelloWorld:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: get
+
+  HelloWorldStepFunction:
+    Type: AWS::StepFunctions::StateMachine
+    Properties:
+      DefinitionString: 
+        Fn::Sub: | 
+          {
+            "Comment": "A simple AWS Step Functions state machine that executes the HelloWorld Lambda function.",
+            "StartAt": "HelloWorld",
+            "States": {
+              "HelloWorld": {
+                "Type": "Task",
+                "Resource": "${HelloWorldFunction.Arn}",
+                "End": true
+              }
+            }
+          }
+      RoleArn: !GetAtt StepFunctionsExecutionRole.Arn
+
+  StepFunctionsExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service: "states.amazonaws.com"
+            Action: "sts:AssumeRole"
+      Policies:
+        - PolicyName: "LambdaInvoke"
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: "Allow"
+                Action: "lambda:InvokeFunction"
+                Resource: !GetAtt HelloWorldFunction.Arn
+
+Outputs:
+  HelloWorldApi:
+    Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
+  HelloWorldFunction:
+    Description: "Hello World Lambda Function ARN"
+    Value: !GetAtt HelloWorldFunction.Arn
+  HelloWorldStepFunction:
+    Description: "ARN of the Hello World Step Function"
+    Value: !GetAtt HelloWorldStepFunction.Arn
