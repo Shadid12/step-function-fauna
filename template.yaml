@@ -82,6 +82,25 @@ Resources:
               - Effect: "Allow"
                 Action: "lambda:InvokeFunction"
                 Resource: !GetAtt HelloWorldFunction.Arn
+              - Effect: Allow
+                Action:
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:GetSecretValue
+                Resource: !GetAtt FaunaDBConnection.SecretArn
+              - Effect: Allow
+                Action:
+                  - events:RetrieveConnectionCredentials
+                Resource: !GetAtt FaunaDBConnection.Arn
+              - Effect: Allow
+                Action:
+                  - states:InvokeHTTPEndpoint
+                Resource: '*'
+                Condition:
+                  StringEquals:
+                    states:HTTPMethod: POST
+                  StringLike:
+                    states:HTTPEndpoint: "https://db.fauna.com/query/1"
+
 
 Outputs:
   HelloWorldApi:
