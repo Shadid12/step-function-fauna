@@ -1,8 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
+
+Parameters:
+  FaunaDBSecret:
+    Type: String
+
 Description: >
   step-app
-
   Sample SAM Template for step-app with Step Function
   
 Globals:
@@ -10,6 +14,21 @@ Globals:
     Timeout: 3
 
 Resources:
+  FaunaDBConnection:
+    Type: AWS::Events::Connection
+    Properties:
+      Name: 'openweather-connection'
+      AuthorizationType: API_KEY
+      AuthParameters:
+        ApiKeyAuthParameters:
+          ApiKeyName: Authorization
+          ApiKeyValue: !Ref FaunaDBSecret
+        InvocationHttpParameters:
+          QueryStringParameters:
+            - IsValueSecret: true
+              Key: appid
+              Value: !Ref FaunaDBSecret
+  
   HelloWorldFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -41,6 +60,8 @@ Resources:
               }
             }
           }
+      DefinitionSubstitutions:
+        FaunaDBConnectionArn: !GetAtt FaunaDBConnection.Arn
       RoleArn: !GetAtt StepFunctionsExecutionRole.Arn
 
   StepFunctionsExecutionRole:
